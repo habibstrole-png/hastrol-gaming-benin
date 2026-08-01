@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block titre %}Inscription — {{ nom_jeu }} | Hastrol Gaming Benin{% endblock %}
+
+{% block contenu %}
+<section class="section">
+  <div class="conteneur">
+    <div class="section-titre">
+      <h2>Inscription — {{ nom_jeu }}</h2>
+      <a href="{{ url_for('accueil') }}">← Retour</a>
+    </div>
+    <p style="color:var(--texte-doux); max-width:600px; margin-top:-10px;">
+      Les équipes sont composées de <b>{{ capacite }} joueurs</b>. Crée une nouvelle équipe ou rejoins une équipe qui n'a pas encore son effectif complet.
+    </p>
+
+    <div class="carte-form" style="max-width:640px;">
+      <form method="POST" id="form-inscription">
+
+        <div class="champ">
+          <label>Je veux...</label>
+          <div style="display:flex; gap:20px; margin-top:6px;">
+            <label style="display:flex; align-items:center; gap:8px; font-weight:500; color:var(--texte);">
+              <input type="radio" name="action" value="creer" id="opt-creer"
+                {% if form.action != 'rejoindre' %}checked{% endif %}> Créer une nouvelle équipe
+            </label>
+            <label style="display:flex; align-items:center; gap:8px; font-weight:500; color:var(--texte);">
+              <input type="radio" name="action" value="rejoindre" id="opt-rejoindre"
+                {% if form.action == 'rejoindre' %}checked{% endif %}> Rejoindre une équipe
+            </label>
+          </div>
+        </div>
+
+        <div class="champ" id="bloc-creer">
+          <label for="nom_equipe">Nom de l'équipe</label>
+          <input type="text" id="nom_equipe" name="nom_equipe" value="{{ form.nom_equipe or '' }}" placeholder="Ex: Hastrol Warriors">
+          <p style="font-size:13px; color:var(--texte-doux); margin-top:8px;">Tu crées l'équipe : tu en deviendras automatiquement le <b style="color:var(--jaune);">capitaine</b>.</p>
+        </div>
+
+        <div class="champ" id="bloc-rejoindre">
+          <label for="equipe_id">Équipe à rejoindre</label>
+          <select id="equipe_id" name="equipe_id">
+            <option value="">Choisir une équipe...</option>
+            {% for e in equipes %}
+              {% if e.effectif < capacite %}
+                <option value="{{ e.id }}" {% if form.equipe_id == e.id|string %}selected{% endif %}>
+                  {{ e.nom }} ({{ e.effectif }}/{{ capacite }} joueurs)
+                </option>
+              {% endif %}
+            {% endfor %}
+          </select>
+          {% if not equipes|selectattr('effectif', 'lt', capacite)|list %}
+            <p style="font-size:13px; color:var(--texte-doux); margin-top:8px;">Aucune équipe en formation pour l'instant — sois le premier à en créer une !</p>
+          {% endif %}
+        </div>
+
+        <hr style="border-color:var(--ligne); margin:24px 0;">
+
+        <div class="champ">
+          <label for="pseudo">Ton pseudo en jeu</label>
+          <input type="text" id="pseudo" name="pseudo" value="{{ form.pseudo or '' }}" placeholder="Ex: HastrolSniper229" required>
+        </div>
+
+        <div class="champ">
+          <label for="plateforme">Plateforme</label>
+          <select id="plateforme" name="plateforme" required>
+            <option value="">Choisir...</option>
+            <option value="Android" {% if form.plateforme == 'Android' %}selected{% endif %}>Android</option>
+            <option value="iOS" {% if form.plateforme == 'iOS' %}selected{% endif %}>iOS</option>
+          </select>
+        </div>
+
+        <div class="champ">
+          <label for="id_jeu">
+            {% if jeu == 'codm' %}Identifiant CODM (UID){% else %}Identifiant PUBG (ID joueur){% endif %}
+          </label>
+          <input type="text" id="id_jeu" name="id_jeu" value="{{ form.id_jeu or '' }}" placeholder="Ex: 123456789" required>
+        </div>
+
+        <div class="champ">
+          <label for="contact">Téléphone ou email</label>
+          <input type="text" id="contact" name="contact" value="{{ form.contact or '' }}" placeholder="Ex: 01 90 00 00 00" required>
+        </div>
+
+        <button type="submit" class="bouton bouton-principal bouton-bloc">Confirmer mon inscription</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<script>
+  const optCreer = document.getElementById('opt-creer');
+  const optRejoindre = document.getElementById('opt-rejoindre');
+  const blocCreer = document.getElementById('bloc-creer');
+  const blocRejoindre = document.getElementById('bloc-rejoindre');
+  const champNomEquipe = document.getElementById('nom_equipe');
+  const champEquipeId = document.getElementById('equipe_id');
+
+  function majAffichage() {
+    if (optRejoindre.checked) {
+      blocCreer.style.display = 'none';
+      blocRejoindre.style.display = 'block';
+      champNomEquipe.required = false;
+      champEquipeId.required = true;
+    } else {
+      blocCreer.style.display = 'block';
+      blocRejoindre.style.display = 'none';
+      champNomEquipe.required = true;
+      champEquipeId.required = false;
+    }
+  }
+  optCreer.addEventListener('change', majAffichage);
+  optRejoindre.addEventListener('change', majAffichage);
+  majAffichage();
+</script>
+{% endblock %}

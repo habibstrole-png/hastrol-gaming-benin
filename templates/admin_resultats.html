@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block titre %}Saisie des résultats | Hastrol Gaming Benin{% endblock %}
+
+{% block contenu %}
+<section class="section">
+  <div class="conteneur">
+    <div class="section-titre">
+      <h2>Saisir un résultat — {{ nom_jeu }}</h2>
+      <a href="{{ url_for('admin_logout') }}">Se déconnecter</a>
+    </div>
+
+    <div class="filtre-jeux">
+      {% for code, nom in jeux.items() %}
+        <a href="{{ url_for('admin_resultats', jeu=code) }}" class="{{ 'actif' if code == jeu else '' }}">{{ nom }}</a>
+      {% endfor %}
+    </div>
+
+    <div class="carte-form">
+      <form method="POST">
+        <div class="champ">
+          <label for="equipe_id">Équipe</label>
+          <select id="equipe_id" name="equipe_id" required>
+            <option value="">Choisir une équipe...</option>
+            {% for e in equipes %}
+              <option value="{{ e.id }}">{{ e.nom }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="champ">
+          <label for="points">Points gagnés ce match</label>
+          <input type="number" id="points" name="points" value="0" min="0" required>
+        </div>
+        <div class="champ">
+          <label for="victoires">Victoires (0 ou 1)</label>
+          <input type="number" id="victoires" name="victoires" value="0" min="0" required>
+        </div>
+        <div class="champ">
+          <label for="eliminations">Éliminations totales de l'équipe</label>
+          <input type="number" id="eliminations" name="eliminations" value="0" min="0" required>
+        </div>
+        <button type="submit" class="bouton bouton-principal bouton-bloc">Ajouter au classement</button>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

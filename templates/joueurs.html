@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block titre %}Équipes inscrites — {{ nom_jeu }} | Hastrol Gaming Benin{% endblock %}
+
+{% block contenu %}
+<section class="section">
+  <div class="conteneur">
+    <div class="section-titre">
+      <h2>Équipes inscrites — {{ nom_jeu }}</h2>
+    </div>
+
+    <div class="filtre-jeux">
+      {% for code, nom in jeux.items() %}
+        <a href="{{ url_for('liste_joueurs', jeu=code) }}" class="{{ 'actif' if code == jeu else '' }}">{{ nom }}</a>
+      {% endfor %}
+    </div>
+
+    {% if equipes_detail %}
+    <div class="grille-jeux" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));">
+      {% for item in equipes_detail %}
+        <div class="carte-jeu" style="padding:20px 22px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h3 style="margin:0; font-size:18px;">{{ item.equipe.nom }}</h3>
+            <span class="badge {{ 'plein' if not item.complete else '' }}" style="{% if item.complete %}background:rgba(0,135,81,.18); color:#7fe0b5;{% endif %}">
+              {{ item.joueurs|length }}/{{ capacite }} {{ 'complète' if item.complete else 'en formation' }}
+            </span>
+          </div>
+          <ul style="margin:0; padding-left:18px; color:var(--texte-doux); font-size:14px;">
+            {% for j in item.joueurs %}
+              <li>
+                {{ j.pseudo }}
+                {% if j.est_capitaine %}<span class="badge" style="background:rgba(252,209,22,.15); color:var(--jaune); border-color:transparent; padding:2px 8px; font-size:11px;">Capitaine</span>{% endif %}
+                <span style="opacity:.6;">({{ j.plateforme }})</span>
+              </li>
+            {% endfor %}
+          </ul>
+          {% if not item.complete %}
+            <a href="{{ url_for('inscription', jeu=jeu) }}" style="display:inline-block; margin-top:14px; font-size:13px; color:var(--jaune); font-weight:600;">Rejoindre cette équipe →</a>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="vide">Aucune équipe inscrite cette semaine pour ce jeu. Sois le premier à en créer une !</div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block titre %}Espace admin | Hastrol Gaming Benin{% endblock %}
+
+{% block contenu %}
+<section class="section">
+  <div class="conteneur">
+    <div class="carte-form">
+      <h2 style="margin-top:0;">Espace organisateur</h2>
+      <form method="POST">
+        <div class="champ">
+          <label for="mot_de_passe">Mot de passe</label>
+          <input type="password" id="mot_de_passe" name="mot_de_passe" required>
+        </div>
+        <button type="submit" class="bouton bouton-principal bouton-bloc">Se connecter</button>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

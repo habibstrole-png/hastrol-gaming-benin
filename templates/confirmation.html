@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block titre %}Inscription confirmée | Hastrol Gaming Benin{% endblock %}
+
+{% block contenu %}
+<section class="section">
+  <div class="conteneur" style="text-align:center; max-width:520px;">
+    <div class="eyebrow" style="justify-content:center;">Inscription enregistrée</div>
+    <h2 style="font-size:30px;">Tu es inscrit au tournoi {{ nom_jeu }} !</h2>
+    <p style="color:var(--texte-doux); margin-bottom:30px;">
+      Garde ton téléphone à portée : les horaires des matchs seront communiqués avant le début du tournoi. Bonne chance !
+    </p>
+    <div style="display:flex; gap:14px; justify-content:center;">
+      <a href="{{ url_for('classement', jeu=jeu) }}" class="bouton bouton-principal">Voir le classement</a>
+      <a href="{{ url_for('accueil') }}" class="bouton bouton-secondaire">Retour à l'accueil</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

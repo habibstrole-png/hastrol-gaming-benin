@@ -1,0 +1,38 @@
+<svg viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="pubgBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#071a12"/>
+      <stop offset="100%" stop-color="#0a2618"/>
+    </linearGradient>
+    <radialGradient id="pubgGlow" cx="50%" cy="60%" r="65%">
+      <stop offset="0%" stop-color="#008751" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#008751" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="600" height="400" fill="url(#pubgBg)"/>
+  <rect width="600" height="400" fill="url(#pubgGlow)"/>
+
+  <!-- zone de jeu (cercle qui retrecit) -->
+  <g fill="none" stroke="#FCD116" stroke-width="2">
+    <circle cx="300" cy="230" r="140" stroke-opacity="0.3" stroke-dasharray="6 6"/>
+    <circle cx="320" cy="215" r="85" stroke="#ffffff" stroke-opacity="0.85"/>
+  </g>
+
+  <!-- carte / relief -->
+  <g stroke="#ffffff" stroke-opacity="0.12" fill="none">
+    <path d="M120 300 Q 220 260 300 300 T 480 290"/>
+    <path d="M100 250 Q 250 210 400 250 T 560 235"/>
+  </g>
+
+  <!-- parachute stylisé -->
+  <g transform="translate(320,120)">
+    <path d="M -50 20 Q 0 -45 50 20 Q 25 5 0 20 Q -25 5 -50 20 Z" fill="#FCD116" opacity="0.9"/>
+    <line x1="-35" y1="20" x2="-8" y2="70" stroke="#FCD116" stroke-width="1.5"/>
+    <line x1="35" y1="20" x2="8" y2="70" stroke="#FCD116" stroke-width="1.5"/>
+    <line x1="0" y1="20" x2="0" y2="70" stroke="#FCD116" stroke-width="1.5"/>
+    <circle cx="0" cy="78" r="6" fill="#0a2618" stroke="#FCD116" stroke-width="1.5"/>
+  </g>
+
+  <text x="300" y="350" text-anchor="middle" font-family="'Rajdhani', sans-serif" font-size="34" font-weight="700" letter-spacing="4" fill="#FCD116">PUBG MOBILE</text>
+  <text x="300" y="377" text-anchor="middle" font-family="'Rajdhani', sans-serif" font-size="15" letter-spacing="6" fill="#c9f2df" opacity="0.8">SQUAD &amp; SOLO BATTLE ROYALE</text>
+</svg>

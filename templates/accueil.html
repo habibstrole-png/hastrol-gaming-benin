@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block titre %}Hastrol Gaming Benin — Tournois esport hebdomadaires{% endblock %}
+
+{% block contenu %}
+<section class="hero">
+  <div class="conteneur">
+    <div class="eyebrow">Tournoi de la semaine en cours</div>
+    <h1>Affronte les meilleurs équipes du <em>Bénin</em> chaque semaine</h1>
+    <p>Inscris-toi gratuitement en équipe aux tournois Call of Duty Mobile et PUBG Mobile, joue tes matchs, et grimpe dans le classement hebdomadaire.</p>
+    <div class="semaine-info">
+      <div>Semaine <b>{{ semaine }}</b></div>
+      <div>Du <b>{{ lundi.strftime('%d/%m') }}</b> au <b>{{ dimanche.strftime('%d/%m') }}</b></div>
+      <div><b>{{ stats.codm.joueurs + stats.pubg.joueurs }}</b> joueurs inscrits</div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="conteneur">
+    <div class="section-titre">
+      <h2>Choisis ton tournoi</h2>
+    </div>
+    <div class="grille-jeux">
+
+      <div class="carte-jeu">
+        <img src="{{ url_for('static', filename='img/codm.svg') }}" alt="Tournoi Call of Duty Mobile">
+        <div class="carte-corps">
+          <h3>Call of Duty Mobile</h3>
+          <div class="badge-ligne">
+            <span class="badge">Équipes de {{ taille_equipe.codm }} joueurs</span>
+            <span class="badge plein">{{ stats.codm.completes }} équipe(s) complète(s) · {{ stats.codm.en_formation }} en formation</span>
+          </div>
+          <p>Tournoi hebdomadaire en équipe de {{ taille_equipe.codm }}. Crée ton équipe ou rejoins une équipe qui cherche encore des joueurs.</p>
+          <a href="{{ url_for('inscription', jeu='codm') }}" class="bouton bouton-principal bouton-bloc">S'inscrire au tournoi</a>
+        </div>
+      </div>
+
+      <div class="carte-jeu">
+        <img src="{{ url_for('static', filename='img/pubg.svg') }}" alt="Tournoi PUBG Mobile">
+        <div class="carte-corps">
+          <h3>PUBG Mobile</h3>
+          <div class="badge-ligne">
+            <span class="badge">Équipes de {{ taille_equipe.pubg }} joueurs</span>
+            <span class="badge plein">{{ stats.pubg.completes }} équipe(s) complète(s) · {{ stats.pubg.en_formation }} en formation</span>
+          </div>
+          <p>Format squad de {{ taille_equipe.pubg }} joueurs. Largue-toi sur la carte avec ton équipe et survis à la zone jusqu'au bout.</p>
+          <a href="{{ url_for('inscription', jeu='pubg') }}" class="bouton bouton-principal bouton-bloc">S'inscrire au tournoi</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section class="section" style="padding-top:0;">
+  <div class="conteneur">
+    <div class="section-titre">
+      <h2>Classement</h2>
+      <a href="{{ url_for('classement') }}">Voir le classement complet →</a>
+    </div>
+    <p style="color:var(--texte-doux); max-width:600px;">
+      Le classement est par équipe, mis à jour après chaque tournoi, et repart à zéro toutes les semaines.
+    </p>
+  </div>
+</section>
+{% endblock %}

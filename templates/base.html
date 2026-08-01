@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block titre %}Hastrol Gaming Benin{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <header>
+    <div class="conteneur barre-nav">
+      <a href="{{ url_for('accueil') }}" class="logo">
+        <div class="logo-badge">HG</div>
+        <div class="logo-texte">HASTROL<span>GAMING BENIN</span></div>
+      </a>
+      <nav>
+        <ul>
+          <li><a href="{{ url_for('accueil') }}">Accueil</a></li>
+          <li><a href="{{ url_for('classement') }}">Classement</a></li>
+          <li><a href="{{ url_for('liste_joueurs') }}">Joueurs inscrits</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="conteneur" style="padding-top:24px;">
+          <div class="messages">
+            {% for categorie, message in messages %}
+              <div class="message {{ categorie }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block contenu %}{% endblock %}
+  </main>
+
+  <footer>
+    <div class="conteneur">
+      Hastrol Gaming Benin — Tournois hebdomadaires Call of Duty Mobile &amp; PUBG Mobile
+    </div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block titre %}Classement — {{ nom_jeu }} | Hastrol Gaming Benin{% endblock %}
+
+{% block contenu %}
+<section class="section">
+  <div class="conteneur">
+    <div class="section-titre">
+      <h2>Classement — {{ nom_jeu }}</h2>
+    </div>
+
+    <div class="filtre-jeux">
+      {% for code, nom in jeux.items() %}
+        <a href="{{ url_for('classement', jeu=code, semaine=semaine) }}" class="{{ 'actif' if code == jeu else '' }}">{{ nom }}</a>
+      {% endfor %}
+    </div>
+
+    {% if semaines|length > 1 %}
+    <div class="filtre-jeux" style="margin-bottom:30px;">
+      {% for s in semaines %}
+        <a href="{{ url_for('classement', jeu=jeu, semaine=s) }}" class="{{ 'actif' if s == semaine else '' }}">Semaine {{ s.split('-S')[1] }}</a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if equipes %}
+    <table class="classement">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Équipe</th>
+          <th>Joueurs</th>
+          <th>Victoires</th>
+          <th>Éliminations</th>
+          <th>Points</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in equipes %}
+        <tr>
+          <td class="rang">{{ loop.index }}</td>
+          <td>{{ e.nom }}</td>
+          <td style="color:var(--texte-doux); font-size:13px;">{{ membres[e.id]|join(', ') }}</td>
+          <td>{{ e.victoires }}</td>
+          <td>{{ e.eliminations }}</td>
+          <td class="points">{{ e.points }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="vide">
+      Aucune équipe pour le moment sur cette semaine. Inscris-toi au tournoi pour apparaître ici !
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
