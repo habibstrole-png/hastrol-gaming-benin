@@ -11,15 +11,15 @@ Puis ouvrir http://127.0.0.1:5000
 """
 
 import os
-import sqlite3
 from datetime import date, datetime, timedelta
 from functools import wraps
 
 from flask import (Flask, render_template, request, redirect,
                     url_for, flash, session, g)
 
+import db_compat
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "hastrol.db")
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "cle-secrete-a-changer-en-production")
@@ -45,9 +45,7 @@ TAILLE_EQUIPE = {
 
 def get_db():
     if "db" not in g:
-        g.db = sqlite3.connect(DB_PATH)
-        g.db.row_factory = sqlite3.Row
-        g.db.execute("PRAGMA foreign_keys = ON")
+        g.db = db_compat.connect()
     return g.db
 
 
@@ -59,46 +57,14 @@ def close_db(exception=None):
 
 
 def init_db():
-    db = sqlite3.connect(DB_PATH)
-    db.executescript(
-        """
-        CREATE TABLE IF NOT EXISTS equipes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nom TEXT NOT NULL,
-            jeu TEXT NOT NULL,
-            semaine TEXT NOT NULL,
-            date_creation TEXT NOT NULL,
-            UNIQUE(nom, jeu, semaine)
-        );
-
-        CREATE TABLE IF NOT EXISTS joueurs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            equipe_id INTEGER NOT NULL,
-            pseudo TEXT NOT NULL,
-            plateforme TEXT NOT NULL,
-            id_jeu TEXT NOT NULL,
-            contact TEXT NOT NULL,
-            est_capitaine INTEGER NOT NULL DEFAULT 0,
-            date_inscription TEXT NOT NULL,
-            FOREIGN KEY (equipe_id) REFERENCES equipes(id) ON DELETE CASCADE,
-            UNIQUE(pseudo, equipe_id)
-        );
-
-        CREATE TABLE IF NOT EXISTS resultats (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            equipe_id INTEGER NOT NULL,
-            points INTEGER NOT NULL DEFAULT 0,
-            victoires INTEGER NOT NULL DEFAULT 0,
-            eliminations INTEGER NOT NULL DEFAULT 0,
-            FOREIGN KEY (equipe_id) REFERENCES equipes(id) ON DELETE CASCADE
-        );
-        """
-    )
+    db = db_compat.connect()
+    db.executescript(db_compat.schema_equipes())
+    db.executescript(db_compat.schema_joueurs())
+    db.executescript(db_compat.schema_resultats())
     # migration douce : ajoute la colonne si une base existante ne l'a pas encore
-    colonnes = [row[1] for row in db.execute("PRAGMA table_info(joueurs)").fetchall()]
-    if "est_capitaine" not in colonnes:
+    if not db_compat.colonne_existe(db, "joueurs", "est_capitaine"):
         db.execute("ALTER TABLE joueurs ADD COLUMN est_capitaine INTEGER NOT NULL DEFAULT 0")
-    db.commit()
+        db.commit()
     db.close()
 
 
@@ -221,21 +187,27 @@ def inscription(jeu):
                 erreurs.append("Choisis un nom d'équipe d'au moins 2 caractères.")
             if not erreurs:
                 try:
-                    cur = db.execute(
+                    equipe_id = db_compat.inserer_et_recuperer_id(
+                        db,
                         "INSERT INTO equipes (nom, jeu, semaine, date_creation) VALUES (?, ?, ?, ?)",
                         (nom_equipe, jeu, semaine, datetime.now().strftime("%Y-%m-%d %H:%M")),
                     )
-                    db.commit()
-                    equipe_id = cur.lastrowid
                     est_capitaine = 1
-                except sqlite3.IntegrityError:
+                except db_compat.IntegrityError:
+                    db.rollback()
                     erreurs.append("Ce nom d'équipe est déjà pris cette semaine pour ce jeu.")
 
         elif action == "rejoindre":
-            equipe_id = request.form.get("equipe_id")
-            if not equipe_id:
+            equipe_id_brut = request.form.get("equipe_id")
+            if not equipe_id_brut:
                 erreurs.append("Choisis une équipe à rejoindre.")
             else:
+                try:
+                    equipe_id = int(equipe_id_brut)
+                except ValueError:
+                    equipe_id = None
+                    erreurs.append("Équipe invalide.")
+            if equipe_id is not None:
                 ligne = db.execute(
                     "SELECT COUNT(*) AS n FROM joueurs WHERE equipe_id = ?", (equipe_id,)
                 ).fetchone()
@@ -259,7 +231,8 @@ def inscription(jeu):
                  datetime.now().strftime("%Y-%m-%d %H:%M")),
             )
             db.commit()
-        except sqlite3.IntegrityError:
+        except db_compat.IntegrityError:
+            db.rollback()
             flash("Ce pseudo est déjà inscrit dans cette équipe.", "erreur")
             equipes = equipes_avec_effectif(db, jeu, semaine)
             return render_template("inscription.html", jeu=jeu, nom_jeu=GAMES[jeu],
@@ -388,7 +361,12 @@ def admin_resultats():
     semaine = semaine_courante()
 
     if request.method == "POST":
-        equipe_id = request.form.get("equipe_id")
+        equipe_id_brut = request.form.get("equipe_id")
+        try:
+            equipe_id = int(equipe_id_brut)
+        except (TypeError, ValueError):
+            flash("Équipe invalide.", "erreur")
+            return redirect(url_for("admin_resultats", jeu=jeu))
         points = int(request.form.get("points") or 0)
         victoires = int(request.form.get("victoires") or 0)
         eliminations = int(request.form.get("eliminations") or 0)
@@ -406,6 +384,114 @@ def admin_resultats():
     ).fetchall()
     return render_template("admin_resultats.html", jeux=GAMES, jeu=jeu, nom_jeu=GAMES[jeu],
                             equipes=equipes, semaine=semaine)
+
+
+@app.route("/admin/joueurs", methods=["GET"])
+@admin_required
+def admin_joueurs():
+    db = get_db()
+    jeu = request.args.get("jeu", "codm")
+    if jeu not in GAMES:
+        jeu = "codm"
+    semaine = semaine_courante()
+    capacite = TAILLE_EQUIPE[jeu]
+
+    equipes = db.execute(
+        "SELECT id, nom FROM equipes WHERE jeu = ? AND semaine = ? ORDER BY nom",
+        (jeu, semaine),
+    ).fetchall()
+
+    equipes_detail = []
+    for eq in equipes:
+        joueurs = db.execute(
+            "SELECT id, pseudo, plateforme, id_jeu, contact, est_capitaine FROM joueurs "
+            "WHERE equipe_id = ? ORDER BY est_capitaine DESC, date_inscription ASC",
+            (eq["id"],),
+        ).fetchall()
+        equipes_detail.append({"equipe": eq, "joueurs": joueurs, "complete": len(joueurs) >= capacite})
+
+    return render_template("admin_joueurs.html", jeux=GAMES, jeu=jeu, nom_jeu=GAMES[jeu],
+                            equipes_detail=equipes_detail, capacite=capacite, semaine=semaine)
+
+
+@app.route("/admin/joueurs/ajouter", methods=["POST"])
+@admin_required
+def admin_ajouter_joueur():
+    db = get_db()
+    jeu = request.form.get("jeu", "codm")
+    equipe_id = request.form.get("equipe_id")
+    pseudo = request.form.get("pseudo", "").strip()
+    plateforme = request.form.get("plateforme", "Android").strip() or "Android"
+    id_jeu = request.form.get("id_jeu", "").strip() or "N/A"
+    contact = request.form.get("contact", "").strip() or "N/A"
+
+    if not equipe_id or len(pseudo) < 2:
+        flash("Choisis une équipe et un pseudo valide.", "erreur")
+        return redirect(url_for("admin_joueurs", jeu=jeu))
+
+    try:
+        equipe_id = int(equipe_id)
+    except ValueError:
+        flash("Équipe invalide.", "erreur")
+        return redirect(url_for("admin_joueurs", jeu=jeu))
+
+    try:
+        db.execute(
+            """INSERT INTO joueurs (equipe_id, pseudo, plateforme, id_jeu, contact, est_capitaine, date_inscription)
+               VALUES (?, ?, ?, ?, ?, 0, ?)""",
+            (equipe_id, pseudo, plateforme, id_jeu, contact, datetime.now().strftime("%Y-%m-%d %H:%M")),
+        )
+        db.commit()
+        flash(f"{pseudo} a été ajouté à l'équipe.", "succes")
+    except db_compat.IntegrityError:
+        db.rollback()
+        flash("Ce pseudo existe déjà dans cette équipe.", "erreur")
+
+    return redirect(url_for("admin_joueurs", jeu=jeu))
+
+
+@app.route("/admin/joueurs/supprimer/<int:joueur_id>", methods=["POST"])
+@admin_required
+def admin_supprimer_joueur(joueur_id):
+    db = get_db()
+    jeu = request.form.get("jeu", "codm")
+
+    joueur = db.execute(
+        "SELECT j.id, j.equipe_id, j.pseudo, j.est_capitaine FROM joueurs j WHERE j.id = ?",
+        (joueur_id,),
+    ).fetchone()
+
+    if joueur is None:
+        flash("Joueur introuvable.", "erreur")
+        return redirect(url_for("admin_joueurs", jeu=jeu))
+
+    equipe_id = joueur["equipe_id"]
+    db.execute("DELETE FROM joueurs WHERE id = ?", (joueur_id,))
+    db.commit()
+    flash(f"{joueur['pseudo']} a été retiré de l'équipe.", "succes")
+
+    # si le capitaine est supprimé, le joueur restant le plus ancien devient capitaine
+    if joueur["est_capitaine"]:
+        prochain = db.execute(
+            "SELECT id FROM joueurs WHERE equipe_id = ? ORDER BY date_inscription ASC LIMIT 1",
+            (equipe_id,),
+        ).fetchone()
+        if prochain:
+            db.execute("UPDATE joueurs SET est_capitaine = 1 WHERE id = ?", (prochain["id"],))
+            db.commit()
+
+    return redirect(url_for("admin_joueurs", jeu=jeu))
+
+
+@app.route("/admin/equipes/supprimer/<int:equipe_id>", methods=["POST"])
+@admin_required
+def admin_supprimer_equipe(equipe_id):
+    db = get_db()
+    jeu = request.form.get("jeu", "codm")
+    db.execute("DELETE FROM equipes WHERE id = ?", (equipe_id,))
+    db.commit()
+    flash("Équipe supprimée.", "succes")
+    return redirect(url_for("admin_joueurs", jeu=jeu))
 
 
 if __name__ == "__main__":
